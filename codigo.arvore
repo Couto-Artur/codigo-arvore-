@@ -1,0 +1,249 @@
+# -*- coding: utf-8 -*-
+
+class No:
+    def __init__(self, valor):
+        self.valor = valor
+        self.esquerda = None
+        self.direita = None
+        self.altura = 1
+
+class str:
+    def rstrip(self, chars=None):
+        if chars is None:
+            chars = ' \t\n\r\f\v'
+
+        if not self:
+            return self
+
+        i = len(self) - 1
+        while i >= 0 and self[i] in chars:
+            i -= 1
+
+        return self[:i+1]
+
+
+class AVL:
+    def __init__(self):
+        self.raiz = None
+
+    def altura(self, no):
+        if not no:
+            return 0
+        return no.altura
+
+    def atualizar_altura(self, no):
+        if not no:
+            return 0
+        no.altura = 1 + max(self.altura(no.esquerda), self.altura(no.direita))
+
+    def rotacao_direita(self, z):
+        y = z.esquerda
+        T3 = y.direita
+
+        y.direita = z
+        z.esquerda = T3
+
+        self.atualizar_altura(z)
+        self.atualizar_altura(y)
+
+        return y
+
+    def rotacao_esquerda(self, y):
+        x = y.direita
+        T2 = x.esquerda
+
+        x.esquerda = y
+        y.direita = T2
+
+        self.atualizar_altura(y)
+        self.atualizar_altura(x)
+
+        return x
+
+    def fator_balanceamento(self, no):
+        if not no:
+            return 0
+        return self.altura(no.esquerda) - self.altura(no.direita)
+
+    def inserir(self, raiz, valor):
+        if not raiz:
+            return No(valor)
+
+        if valor < raiz.valor:
+            raiz.esquerda = self.inserir(raiz.esquerda, valor)
+        elif valor > raiz.valor:
+            raiz.direita = self.inserir(raiz.direita, valor)
+        else:
+            return raiz  # Valor já existe na árvore
+
+        self.atualizar_altura(raiz)
+
+        balanceamento = self.fator_balanceamento(raiz)
+
+        # Casos de rotação
+        if balanceamento > 1 and valor < raiz.esquerda.valor:
+            return self.rotacao_direita(raiz)
+
+        if balanceamento < -1 and valor > raiz.direita.valor:
+            return self.rotacao_esquerda(raiz)
+
+        if balanceamento > 1 and valor > raiz.esquerda.valor:
+            raiz.esquerda = self.rotacao_esquerda(raiz.esquerda)
+            return self.rotacao_direita(raiz)
+
+        if balanceamento < -1 and valor < raiz.direita.valor:
+            raiz.direita = self.rotacao_direita(raiz.direita)
+            return self.rotacao_esquerda(raiz)
+
+        return raiz
+
+    def remover(self, raiz, valor):
+        if raiz is None:
+            print('Valor {} inexistente'.format(valor))
+            return
+
+        if valor < raiz.valor:
+            raiz.esquerda = self.remover(raiz.esquerda, valor)
+        elif valor > raiz.valor:
+            raiz.direita = self.remover(raiz.direita, valor)
+        else:
+            if raiz.esquerda is None:
+                return raiz.direita
+            elif raiz.direita is None:
+                return raiz.esquerda
+
+            temp = self.minimo_valor_no(raiz.direita)
+            raiz.valor = temp.valor
+            raiz.direita = self.remover(raiz.direita, temp.valor)
+
+        self.atualizar_altura(raiz)
+
+        balanceamento = self.fator_balanceamento(raiz)
+
+        # Casos de rotação
+        if balanceamento > 1 and self.fator_balanceamento(raiz.esquerda) >= 0:
+            return self.rotacao_direita(raiz)
+
+        if balanceamento < -1 and self.fator_balanceamento(raiz.direita) <= 0:
+            return self.rotacao_esquerda(raiz)
+
+        if balanceamento > 1 and self.fator_balanceamento(raiz.esquerda) < 0:
+            raiz.esquerda = self.rotacao_esquerda(raiz.esquerda)
+            return self.rotacao_direita(raiz)
+
+        if balanceamento < -1 and self.fator_balanceamento(raiz.direita) > 0:
+            raiz.direita = self.rotacao_direita(raiz.direita)
+            return self.rotacao_esquerda(raiz)
+
+        return raiz
+
+    def minimo_valor_no(self, raiz):
+        atual = raiz
+
+        while atual.esquerda is not None:
+            atual = atual.esquerda
+
+        return atual
+
+    def buscar_nivel(self, raiz, valor, nivel=0):
+        if raiz is None:
+            print('Valor {} inexistente'.format(valor))
+            return
+
+        if valor == raiz.valor:
+            print('Nivel de {}: {}'.format(valor, nivel))
+            return
+
+        if valor < raiz.valor:
+            self.buscar_nivel(raiz.esquerda, valor, nivel + 1)
+        else:
+            self.buscar_nivel(raiz.direita, valor, nivel + 1)
+
+    def imprimir_arvore_em_ordem(self, raiz):
+        if raiz:
+            filho_a_esquerda = self.imprimir_arvore_em_ordem(raiz.esquerda)
+            if filho_a_esquerda:
+                print(',', end='') 
+            print(raiz.valor, end='')
+            self.imprimir_em_ordem(raiz.direita)
+            return True
+        else:
+            return False
+
+    def imprimir_em_ordem(self, raiz):
+        if raiz:
+            self.imprimir_em_ordem(raiz.esquerda)
+            print(',', end='')
+            print(raiz.valor, end='')
+            self.imprimir_em_ordem(raiz.direita)
+
+    def imprimir_arvore_pre_ordem(self, raiz):
+        if raiz:
+            print(raiz.valor, end='')
+            self.imprimir_pre_ordem(raiz.esquerda)
+            self.imprimir_pre_ordem(raiz.direita)
+
+    def imprimir_pre_ordem(self, raiz):
+        if raiz:
+            print(',', end='')
+            print(raiz.valor, end='')
+            self.imprimir_pre_ordem(raiz.esquerda)
+            self.imprimir_pre_ordem(raiz.direita)
+
+    def imprimir_arvore_pos_ordem(self, raiz):
+        if raiz:
+            filho_a_esquerda = self.imprimir_arvore_pos_ordem(raiz.esquerda)
+            self.imprimir_pos_ordem(raiz.direita)
+            if filho_a_esquerda:
+                print(',', end='')
+            print(raiz.valor, end='')
+            return True
+        else:
+            return False
+
+    def imprimir_pos_ordem(self, raiz):
+        if raiz:
+            self.imprimir_pos_ordem(raiz.esquerda)
+            self.imprimir_pos_ordem(raiz.direita)
+            print(',', end='')
+            print(raiz.valor, end='')
+
+
+# Função principal
+def main():
+    arvore = AVL()
+
+    while True:
+        entrada = input().split()
+        comando = entrada[0]
+
+        if comando == 'ADICIONA':
+            valor = int(entrada[1])
+            arvore.raiz = arvore.inserir(arvore.raiz, valor)
+        elif comando == 'REMOVE':
+            valor = int(entrada[1])
+            arvore.raiz = arvore.remover(arvore.raiz, valor)
+        elif comando == 'NIVEL':
+            valor = int(entrada[1])
+            arvore.buscar_nivel(arvore.raiz, valor)
+        elif comando == 'PRINT':
+            tipo_impressao = entrada[1]
+
+            if tipo_impressao == 'EMORDEM':
+                print('[', end='')
+                arvore.imprimir_arvore_em_ordem(arvore.raiz)
+                print(']')
+            elif tipo_impressao == 'PREORDEM':
+                print('[', end='')
+                arvore.imprimir_arvore_pre_ordem(arvore.raiz)
+                print(']')
+            elif tipo_impressao == 'POSORDEM':
+                print('[', end='')
+                arvore.imprimir_arvore_pos_ordem(arvore.raiz)
+                print(']')
+        elif comando == 'FIM':
+            break
+
+
+if __name__ == "__main__":
+    main()
